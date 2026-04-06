@@ -10,7 +10,7 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "results_cache.json")
 CAM_SPOTS_FILE = os.path.join(BASE_DIR, "cam_spots.json")
-CACHE_MAX_AGE = 60 * 60 * 6  # 6 hours
+CACHE_MAX_AGE = 60 * 60 * 1  # 1 hours
 
 def fetch(url):
     try:
