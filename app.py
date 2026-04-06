@@ -156,5 +156,13 @@ def search():
 
     return jsonify({"results": filtered, "from_cache": cached is not None})
 
+
+@app.route("/clear-cache")
+def clear_cache():
+    if os.path.exists(CACHE_FILE):
+        os.remove(CACHE_FILE)
+        return "Cache cleared!"
+    return "No cache found."
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
