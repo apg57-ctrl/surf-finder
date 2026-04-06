@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import urllib.request
+import urllib.error
 import json
 import time
 import os
@@ -10,17 +11,27 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CACHE_FILE = os.path.join(BASE_DIR, "results_cache.json")
 CAM_SPOTS_FILE = os.path.join(BASE_DIR, "cam_spots.json")
-CACHE_MAX_AGE = 60 * 60 * 1  # 1 hours
+CACHE_MAX_AGE = 60 * 60 * 1  # 1 hour
 
 def fetch(url):
     try:
         req = urllib.request.Request(url, headers={
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Referer": "https://www.surfline.com/"
+            "Referer": "https://www.surfline.com/",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Origin": "https://www.surfline.com",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site",
         })
         with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read())
-    except:
+    except urllib.error.HTTPError as e:
+        print(f"HTTP Error {e.code} for {url}: {e.reason}")
+        return None
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
         return None
 
 def get_location(lat, lon):
@@ -156,22 +167,21 @@ def search():
 
     return jsonify({"results": filtered, "from_cache": cached is not None})
 
-
 @app.route("/clear-cache")
 def clear_cache():
     if os.path.exists(CACHE_FILE):
         os.remove(CACHE_FILE)
         return "Cache cleared!"
     return "No cache found."
+
 @app.route("/debug-scan")
 def debug_scan():
     import traceback
     try:
         with open(CAM_SPOTS_FILE) as f:
             spots = json.load(f)
-        # Just test the first 10 spots
         results = []
-        for spot in spots[:10]:
+        for spot in spots[:5]:
             result = check_spot(spot)
             results.append({
                 "name": spot.get("name"),
@@ -180,5 +190,6 @@ def debug_scan():
         return jsonify(results)
     except Exception as e:
         return jsonify({"error": str(e), "trace": traceback.format_exc()})
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
