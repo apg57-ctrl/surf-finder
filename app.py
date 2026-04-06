@@ -163,6 +163,22 @@ def clear_cache():
         os.remove(CACHE_FILE)
         return "Cache cleared!"
     return "No cache found."
-
+@app.route("/debug-scan")
+def debug_scan():
+    import traceback
+    try:
+        with open(CAM_SPOTS_FILE) as f:
+            spots = json.load(f)
+        # Just test the first 10 spots
+        results = []
+        for spot in spots[:10]:
+            result = check_spot(spot)
+            results.append({
+                "name": spot.get("name"),
+                "result": result
+            })
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e), "trace": traceback.format_exc()})
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
