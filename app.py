@@ -41,11 +41,19 @@ REGION_MAP = {
     "US": "North America", "CA": "North America",
     "MX": "Central America", "CR": "Central America", "SV": "Central America",
     "NI": "Central America", "PA": "Central America", "GT": "Central America",
+    "HN": "Central America", "BZ": "Central America",
     "BR": "South America", "CL": "South America", "PE": "South America",
     "CO": "South America", "EC": "South America", "AR": "South America",
+    "UY": "South America", "VE": "South America",
     "FR": "Europe", "PT": "Europe", "ES": "Europe", "GB": "Europe",
-    "ID": "Indonesia", "AU": "Australia", "ZA": "Africa", "MA": "Africa",
-    "PF": "Pacific Islands", "FJ": "Pacific Islands",
+    "IE": "Europe", "IS": "Europe", "NO": "Europe", "IT": "Europe",
+    "DE": "Europe", "NL": "Europe", "DK": "Europe",
+    "ID": "Indonesia",
+    "AU": "Australia", "NZ": "Australia",
+    "ZA": "Africa", "MA": "Africa", "SN": "Africa", "MZ": "Africa",
+    "PF": "Pacific Islands", "FJ": "Pacific Islands", "WS": "Pacific Islands",
+    "TO": "Pacific Islands", "CK": "Pacific Islands", "PW": "Pacific Islands",
+    "JP": "Asia", "PH": "Asia", "IN": "Asia", "LK": "Asia",
 }
 
 def check_spot(spot):
