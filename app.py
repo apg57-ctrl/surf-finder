@@ -149,10 +149,10 @@ def search():
 
     cached = load_cache()
 
-    if cached is None:
-        all_results = run_full_scan()
-    else:
-        all_results = cached
+if cached is None:
+    return jsonify({"results": [], "from_cache": False, "message": "Cache empty - run update script on your Mac"})
+
+all_results = cached
 
     SHOW_CONDITIONS = ["FAIR TO GOOD", "GOOD", "GOOD TO EPIC", "EPIC"]
     start_idx = SHOW_CONDITIONS.index(min_condition) if min_condition in SHOW_CONDITIONS else 0
