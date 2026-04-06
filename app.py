@@ -21,9 +21,6 @@ def fetch(url):
             "Accept": "application/json, text/plain, */*",
             "Accept-Language": "en-US,en;q=0.9",
             "Origin": "https://www.surfline.com",
-            "sec-fetch-dest": "empty",
-            "sec-fetch-mode": "cors",
-            "sec-fetch-site": "same-site",
         })
         with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read())
@@ -79,23 +76,19 @@ def check_spot(spot):
     rating = (current.get("rating", {}).get("key") or "").upper().replace("_", " ")
     if rating not in ["FAIR TO GOOD", "GOOD", "GOOD TO EPIC", "EPIC"]:
         return None
-
     wave_data = fetch(f"https://services.surfline.com/kbyg/spots/forecasts/wave?spotId={spot_id}&days=1")
     if not wave_data:
         return None
     wave_entry = wave_data["data"]["wave"][0]["surf"]
     wave_min = wave_entry.get("min", 0)
     wave_max = wave_entry.get("max", 0)
-
     name = spot.get("name", "Unknown")
     lat = spot.get("lat")
     lon = spot.get("lon")
     location = get_location(lat, lon) if lat and lon else {}
     time.sleep(0.3)
-
     region = REGION_MAP.get(location.get("code", ""), "Other")
     url = f"https://www.surfline.com/surf-report/{name.lower().replace(' ', '-')}/{spot_id}"
-
     return {
         "name": name,
         "city": location.get("city", ""),
@@ -106,26 +99,6 @@ def check_spot(spot):
         "wave_max": wave_max,
         "url": url,
     }
-
-def run_full_scan():
-    with open(CAM_SPOTS_FILE) as f:
-        cam_spots = json.load(f)
-
-    results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(check_spot, spot): spot for spot in cam_spots}
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                results.append(result)
-
-    condition_order = {"EPIC": 0, "GOOD TO EPIC": 1, "GOOD": 2, "FAIR TO GOOD": 3}
-    results.sort(key=lambda x: condition_order.get(x["rating"], 99))
-
-    with open(CACHE_FILE, "w") as f:
-        json.dump({"timestamp": time.time(), "results": results}, f)
-
-    return results
 
 def load_cache():
     if not os.path.exists(CACHE_FILE):
@@ -147,12 +120,10 @@ def search():
     min_condition = request.args.get("condition", "FAIR TO GOOD")
     region_filter = request.args.get("region", "Worldwide")
 
-    cached = load_cache()
+    all_results = load_cache()
 
-if cached is None:
-    return jsonify({"results": [], "from_cache": False, "message": "Cache empty - run update script on your Mac"})
-
-all_results = cached
+    if all_results is None:
+        return jsonify({"results": [], "from_cache": False, "message": "Cache empty - run update script on your Mac"})
 
     SHOW_CONDITIONS = ["FAIR TO GOOD", "GOOD", "GOOD TO EPIC", "EPIC"]
     start_idx = SHOW_CONDITIONS.index(min_condition) if min_condition in SHOW_CONDITIONS else 0
@@ -165,7 +136,7 @@ all_results = cached
         and (region_filter == "Worldwide" or r["region"] == region_filter)
     ]
 
-    return jsonify({"results": filtered, "from_cache": cached is not None})
+    return jsonify({"results": filtered, "from_cache": True})
 
 @app.route("/clear-cache")
 def clear_cache():
@@ -173,23 +144,6 @@ def clear_cache():
         os.remove(CACHE_FILE)
         return "Cache cleared!"
     return "No cache found."
-
-@app.route("/debug-scan")
-def debug_scan():
-    import traceback
-    try:
-        with open(CAM_SPOTS_FILE) as f:
-            spots = json.load(f)
-        results = []
-        for spot in spots[:5]:
-            result = check_spot(spot)
-            results.append({
-                "name": spot.get("name"),
-                "result": result
-            })
-        return jsonify(results)
-    except Exception as e:
-        return jsonify({"error": str(e), "trace": traceback.format_exc()})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
