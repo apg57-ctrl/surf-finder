@@ -7,13 +7,18 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 app = Flask(__name__)
 
-CACHE_FILE = "results_cache.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CACHE_FILE = os.path.join(BASE_DIR, "results_cache.json")
+CAM_SPOTS_FILE = os.path.join(BASE_DIR, "cam_spots.json")
 CACHE_MAX_AGE = 60 * 60 * 6  # 6 hours
 
 def fetch(url):
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        with urllib.request.urlopen(req, timeout=10) as response:
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://www.surfline.com/"
+        })
+        with urllib.request.urlopen(req, timeout=15) as response:
             return json.loads(response.read())
     except:
         return None
@@ -84,7 +89,7 @@ def check_spot(spot):
     }
 
 def run_full_scan():
-    with open("cam_spots.json") as f:
+    with open(CAM_SPOTS_FILE) as f:
         cam_spots = json.load(f)
 
     results = []
@@ -122,9 +127,8 @@ def search():
     min_height = int(request.args.get("min_height", 4))
     min_condition = request.args.get("condition", "FAIR TO GOOD")
     region_filter = request.args.get("region", "Worldwide")
-    force_refresh = request.args.get("refresh", "false") == "true"
 
-    cached = None
+    cached = load_cache()
 
     if cached is None:
         all_results = run_full_scan()
